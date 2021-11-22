@@ -1,0 +1,64 @@
+stages:
+  - lint
+  - build
+  - upload
+  - scan
+  - deploy
+
+.kaniko:
+  image: gcr.io/kaniko-project/executor:debug
+  before_script:
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
+
+lint:
+  stage: lint
+  image: 954alberto/tooling:1
+  script:
+    - hadolint $CI_PROJECT_DIR/Dockerfile 
+
+build:
+  extends: .kaniko
+  stage: build
+  script:
+    - /kaniko/executor --no-push --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile
+
+upload:
+  extends: .kaniko
+  stage: upload
+  only:
+    - tags
+  except:
+    - branches
+  script:
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+
+scan:
+  stage: scan
+  image: 954alberto/tooling:1
+  only:
+    - tags
+  except:
+    - branches  
+  script:
+    - trivy $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - grype $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+
+
+
+deploy:
+  stage: deploy
+  image: 954alberto/tooling:1
+  only:
+    - tags
+  except:
+    - branches  
+  script:
+    - kubectl -f $CI_PROJECT_DIR/statefulset.yaml # Credentials coming from CICD variables and files option for example.
+
+# I identify two challenges:
+# First challenge:
+# Using Kaniko the docker image can only be scanned for vulnerabilities if it has been pushed to a docker registry. This might be acceptable depending on company policies but if the image can be scanned before pushing and based on the results stop or continure with the pipeline it would be better. For this a custom docker image of kaniko might be needed and mantained by a CICD team. This image can include the toolds hadolint, trivy and grype.
+# Second challenge:
+# I would not advise to use a CICD tool to deploy workloads to a k8s cluster if we can use GitOps operators like Flux or ArgoCD.
+
