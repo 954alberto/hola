@@ -14,7 +14,7 @@ And it runs the binary.
 I wrote the Dockerfile from scratch but looked for references in stackoverflow.
 
 # 2 
-I copied the example nginx statefulset from the kubernetes documentation and adapted the necesary parts like removing ports replacing the image and adding `securitycontext.fsGroup: 500` to allow the user litecoin to write to the volume.
+I copied the example nginx statefulset from the kubernetes documentation and adapted the necesary parts like removing ports replacing the image and adding `securityContext.fsGroup: 500` to allow the user litecoin to write to the volume.
 
 # 3 
 I took a gitlab-ci file that I wrote at work and expanded/replaced a bit some parts.
