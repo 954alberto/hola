@@ -6,8 +6,8 @@ I tested different base images, debian-slim and alpine but:
 - the binary of litecoind would not start on alpine.
 
 Fedora:36 had no known vulnerabilities by trivy or grype 
-https://github.com/anchore/grype
-https://github.com/aquasecurity/trivy
+- https://github.com/anchore/grype
+- https://github.com/aquasecurity/trivy
 
 And it runs the binary.
 
